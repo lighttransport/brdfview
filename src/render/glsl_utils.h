@@ -1,0 +1,59 @@
+#ifndef GLSL_UTILS_160412
+#define GLSL_UTILS_160412
+
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#define GLM_FORCE_RADIANS 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+
+// Shader Loader
+GLuint loadShaders(const std::string& vs_file, const std::string& fs_file);
+
+
+// Vertex Array
+class GLSLVertexArray {
+public:
+    GLSLVertexArray() : inited(false), vertex_array_id(0), element_buf_id(0) {}
+    ~GLSLVertexArray() { clear(); }
+
+    template<class T1, class... T2>
+    void set(const std::vector<T1>& element, // indices
+             const std::vector<T2>&... attributes);
+
+    void draw();
+
+    void clear();
+
+private:
+    bool inited;
+    GLuint vertex_array_id;  // vertex array
+    GLuint element_buf_id;  // indices buffer
+    std::map<int, GLuint> attribute_ids;  // other attribute buffers
+
+    GLsizei element_count;
+    GLenum element_type;
+
+    template<class T>
+    void setupElement(const std::vector<T>& element);
+
+    template<class First, class... Rest>
+    void setupAttribute(const GLuint idx,
+                        const std::vector<First>& first,
+                        const std::vector<Rest>&... rest);
+
+    template<class T>
+    void setupAttribute(const GLuint idx,
+                        const std::vector<T>& attribute);
+};
+
+#include "glsl_utils_private.h"
+
+#endif
