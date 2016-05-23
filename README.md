@@ -9,6 +9,6 @@ make
 ```
 
 ## Shaders ##
-[x] Specular
-[x] KajiyaKay
-[x] AF Marschner
+- [x] Specular
+- [x] KajiyaKay
+- [x] AF Marschner
