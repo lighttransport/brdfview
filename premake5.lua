@@ -4,7 +4,6 @@ sources = { "./src/**.h", "./src/**.cpp" }
 workspace "BRDFViewWorkspace"
   configurations { "debug", "release" }
   language "C++"
-  includedirs { "./src/landmark/FaceTracker/include" }
   buildoptions { '-std=c++11', '-O3' }
   basedir "build"
 
