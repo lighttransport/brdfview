@@ -23,6 +23,9 @@
 #include "shader.h"
 
 
+const float LIGHT_LENGTH = sqrtf(2.f);
+
+
 void setCameraMatrix(Camera& camera) {
     glm::mat4 mv_mat = camera.getViewMatrix() * glm::mat4(1.0);
     glm::mat4 p_mat = camera.getProjectionMatrix();
@@ -110,10 +113,10 @@ void updateIO(GLWindow& window) {
 int main(int argc, char const* argv[]) {
     // parameters
     glm::vec3 org_pos(0, 0, 0);
-    glm::vec3 light_pos(1, 1, 0);
+    glm::vec3 light_pos(0);
+    float light_deg[2] = {45.f, 0.f};
     glm::vec3 normal(0, 1, 0);
     glm::vec3 tangent(0, 0, 1);
-    float tangent_deg[2] = {0.f, 0.f};
     // shader
     SpecularShader specular_shader;
     KajiyaKayShader kajiyakay_shader;
@@ -173,13 +176,13 @@ int main(int argc, char const* argv[]) {
         // inverse light lines
         glm::vec3 light_inv_pos = glm::reflect(org_pos - light_pos, normal)
                                   + org_pos;
-        drawLine(org_pos, light_inv_pos, 5.f, glm::vec3(0.6f), 10.f);
+        drawLine(org_pos, light_inv_pos, 5.f, glm::vec3(0.5f), 10.f);
         // normal
         drawLine(org_pos, normal, 5.f, glm::vec3(0.f, 1.f, 0.f), 10.f);
         // tangent
         if (shader_idx != 0) {
             glm::vec3 neg_tangent = -tangent;
-            drawLine(tangent, neg_tangent, 10.f, glm::vec3(1.f, 0.3f, 0.1f), 13.f);
+            drawLine(neg_tangent, tangent, 10.f, glm::vec3(1.f, 0.3f, 0.1f), 13.f);
         }
         // binormal
         if (shader_idx != 0) {
@@ -195,18 +198,14 @@ int main(int argc, char const* argv[]) {
                            std::min((int)shaders.size(), 5));
             assert(0 <= shader_idx && shader_idx < shaders.size());
             // Light
-            ImGui::DragFloat3("Light Position", &light_pos[0], 0.01f);
-            // Tangent
-            if (shader_idx != 0) {
-                ImGui::DragFloat2("Tangent (deg)", tangent_deg, 1.f);
-                tangent_deg[0] = glm::clamp(tangent_deg[0], -180.f, 180.f);
-                tangent_deg[1] = glm::clamp(tangent_deg[1], -180.f, 180.f);
-                float theta = tangent_deg[0] * M_PI / 180.f;
-                float phi = tangent_deg[1] * M_PI / 180.f;
-                tangent[0] = sin(theta) * cos(phi);
-                tangent[1] = sin(theta) * sin(phi);
-                tangent[2] = cos(theta);
-            }
+            ImGui::DragFloat2("Light (deg)", light_deg, 1.f);
+            light_deg[0] = glm::clamp(light_deg[0], -180.f, 180.f);
+            light_deg[1] = glm::clamp(light_deg[1], -180.f, 180.f);
+            float theta = light_deg[0] * M_PI / 180.f;
+            float phi = light_deg[1] * M_PI / 180.f;
+            light_pos[0] = sin(theta) * cos(phi) * LIGHT_LENGTH;
+            light_pos[1] = cos(theta) * LIGHT_LENGTH;
+            light_pos[2] = sin(theta) * sin(phi) * LIGHT_LENGTH;
             // shader parameters
             if (shader_idx == 0) {
                 // Specular
