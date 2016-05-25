@@ -23,8 +23,41 @@
 #include "shader.h"
 
 
-void setMeshToVA(GLuint program_id, Mesh& mesh, GLSLVertexArray& va) {
-    va.set(program_id, mesh.indices, mesh.vertices, mesh.normals);
+void drawMesh(Mesh &mesh, glm::vec3 color) {
+    // enable light and material
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glColorMaterial(GL_FRONT, GL_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
+    // color
+    glColor3fv(&color[0]);
+
+    // draw
+    glBegin(GL_TRIANGLES);
+    for (int tri = 0; tri < mesh.indices.size(); tri++) {
+        for (int i = 0; i < 3; i++) {
+            unsigned int v_idx = mesh.indices[tri][i];
+            glNormal3fv(&(mesh.normals[v_idx][0]));
+            glVertex3fv(&(mesh.vertices[v_idx][0]));
+        }
+    }
+    glEnd();
+
+    // disable light and material
+    glDisable(GL_LIGHT0);
+    glDisable(GL_LIGHTING);
+}
+
+void drawLine(glm::vec3& pos0, glm::vec3& pos1, float width, glm::vec3 color) {
+    // color and width
+    glColor3fv(&color[0]);
+    glLineWidth(width);
+
+    // draw
+    glBegin(GL_LINES);
+    glVertex3fv(&(pos0[0]));
+    glVertex3fv(&(pos1[0]));
+    glEnd();
 }
 
 
@@ -60,21 +93,8 @@ int main(int argc, char const* argv[]) {
     Camera camera;
     window.setCamera(&camera);
 
-    // shader
-    GLuint program_id = loadShaders("../src/render/simple.vs",
-                                    "../src/render/simple.fs");
-    if (program_id == 0) return false;
-
-    // viewer uniform
-    GLuint mvp_mat_id = glGetUniformLocation(program_id, "mvp_mat");
-    GLuint mv_mat_id = glGetUniformLocation(program_id, "mv_mat");
-    GLuint kd_vec_id = glGetUniformLocation(program_id, "Kd");
-    GLuint ka_vec_id = glGetUniformLocation(program_id, "Ka");
-
+    // fps counter
     GLFpsCounter fps;
-
-    // vertex array
-    GLSLVertexArray brdf_vertex_array, ground_vertex_array;
 
     // imgui
     ImGui_ImplGlfw_Init(window.getRawRef(), false);
@@ -85,6 +105,17 @@ int main(int argc, char const* argv[]) {
         window.active();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // camera
+        glm::mat4 mv_mat = camera.getViewMatrix() * glm::mat4(1.0);
+        glm::mat4 p_mat = camera.getProjectionMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glMultMatrixf(&mv_mat[0][0]);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glMultMatrixf(&p_mat[0][0]);
+        checkGlError(101);
+
         // create mesh
         Mesh brdf_mesh;  // brdf mesh
         createBRDFMesh(brdf_mesh, *(shaders[shader_idx]), light_pos, 1.f, 100,
@@ -92,55 +123,17 @@ int main(int argc, char const* argv[]) {
         Mesh ground_mesh;  // ground mesh
         createGround(ground_mesh, 1);
 
-        // set mesh to vertex array
-        setMeshToVA(program_id, brdf_mesh, brdf_vertex_array);
-        setMeshToVA(program_id, ground_mesh, ground_vertex_array);
+        // draw meshes
+        drawMesh(brdf_mesh, glm::vec3(0.f, 1.f, 0.f));
+        drawMesh(ground_mesh, glm::vec3(0.5f));
+        checkGlError(102);
 
-        // use glsl shader
-        glUseProgram(program_id);
-
-        // common uniforms
-        glm::mat4 mv_mat = camera.getViewMatrix() * glm::mat4(1.0);
-        glm::mat4 mvp_mat = camera.getProjectionMatrix() * mv_mat;
-        glUniformMatrix4fv(mv_mat_id, 1, GL_FALSE, &mv_mat[0][0]);
-        glUniformMatrix4fv(mvp_mat_id, 1, GL_FALSE, &mvp_mat[0][0]);
-
-        // draw ground mesh
-        glUniform3f(kd_vec_id, 0.2f, 0.2f, 0.2f);  // Gray
-        glUniform3f(ka_vec_id, 0.05f, 0.05f, 0.05f);
-        ground_vertex_array.draw();
-
-        // draw brdf mesh
-        glUniform3f(kd_vec_id, 0.f, 1.f, 0.f);  // Green
-        glUniform3f(ka_vec_id, 0.f, 0.25f, 0.f);
-        brdf_vertex_array.draw();
-
-        // draw light line
-        glUniform3f(kd_vec_id, 0.f, 0.f, 0.f);  // White
-        glUniform3f(ka_vec_id, 1.f, 1.f, 1.f);
-        glLineWidth(5.0);
-        glBegin(GL_LINES);
-        glVertex3fv(&(org_pos[0]));
-        glVertex3fv(&(light_pos[0]));
-        glEnd();
-
-        // draw tangent line
-        if (shader_idx != 0) {
-            glUniform3f(kd_vec_id, 0.f, 0.f, 0.0f);  // Orange
-            glUniform3f(ka_vec_id, 1.f, 0.5f, 0.031f);
-            glLineWidth(10.0);
-            glBegin(GL_LINES);
+        // draw lines
+        drawLine(org_pos, light_pos, 5.f, glm::vec3(1.f));
+        if (shader_idx != 0) {  // tangent line
             glm::vec3 neg_tangent = -tangent;
-            glVertex3fv(&neg_tangent[0]);
-            glVertex3fv(&tangent[0]);
-            glEnd();
+            drawLine(tangent, neg_tangent, 10.f, glm::vec3(1.f, 0.5f, 0.2f));
         }
-
-        // clear glsl
-        glUseProgram(0);
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         // imgui
         ImGui_ImplGlfw_NewFrame();
@@ -181,8 +174,7 @@ int main(int argc, char const* argv[]) {
             }
         }
         ImGui::Render();
-        checkGlError(400);
-
+        checkGlError(103);
 
         // Check input type
         ImGuiIO &io = ImGui::GetIO();
@@ -196,7 +188,6 @@ int main(int argc, char const* argv[]) {
     // exit
     std::cout << "* Exit" << std::endl;
     ImGui_ImplGlfw_Shutdown();
-    glDeleteProgram(program_id);
 
     return 0;
 }
