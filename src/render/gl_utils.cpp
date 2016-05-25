@@ -1,4 +1,4 @@
-#include "glsl_utils.h"
+#include "gl_utils.h"
 
 
 // === Error Checker ===

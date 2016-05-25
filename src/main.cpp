@@ -18,10 +18,24 @@
 #include "io/gl_fps.h"
 #include "mesh.h"
 #include "render/camera.h"
-#include "render/glsl_utils.h"
-#include "render/glsl_window.h"
+#include "render/gl_utils.h"
+#include "render/gl_window.h"
 #include "shader.h"
 
+
+void setCameraMatrix(Camera& camera) {
+    glm::mat4 mv_mat = camera.getViewMatrix() * glm::mat4(1.0);
+    glm::mat4 p_mat = camera.getProjectionMatrix();
+    // model view
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glMultMatrixf(&mv_mat[0][0]);
+    // projection
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glMultMatrixf(&p_mat[0][0]);
+    checkGlError(101);
+}
 
 void drawMesh(Mesh &mesh, glm::vec3 color) {
     // enable light and material
@@ -48,7 +62,8 @@ void drawMesh(Mesh &mesh, glm::vec3 color) {
     glDisable(GL_LIGHTING);
 }
 
-void drawLine(glm::vec3& pos0, glm::vec3& pos1, float width, glm::vec3 color) {
+void drawLine(glm::vec3& pos0, glm::vec3& pos1, float width, glm::vec3 color,
+              float head_size=-1) {
     // color and width
     glColor3fv(&color[0]);
     glLineWidth(width);
@@ -58,6 +73,37 @@ void drawLine(glm::vec3& pos0, glm::vec3& pos1, float width, glm::vec3 color) {
     glVertex3fv(&(pos0[0]));
     glVertex3fv(&(pos1[0]));
     glEnd();
+
+    if (head_size > 0) {
+        glPointSize(head_size);
+        glBegin(GL_POINTS);
+        glVertex3fv(&(pos1[0]));
+        glEnd();
+    }
+}
+
+
+void updateIO(GLWindow& window) {
+    ImGuiIO &io = ImGui::GetIO();
+    bool in_imgui = io.WantCaptureMouse || io.WantCaptureKeyboard;
+    if (in_imgui) {
+        window.useInput(false);
+        // key
+        int key, scancode, action, mods;
+        bool key_pushed = window.getKeyStatus(key, scancode, action, mods);
+        if (key_pushed) {
+            ImGui_ImplGlFw_KeyCallback(window.getRawRef(), key, scancode,
+                                       action, mods);
+        }
+        // char
+        unsigned int key_char;
+        bool key_char_pushed = window.getCharStatus(key_char);
+        if (key_char_pushed) {
+            ImGui_ImplGlfw_CharCallback(window.getRawRef(), key_char);
+        }
+    } else {
+        window.useInput(true);
+    }
 }
 
 
@@ -67,6 +113,7 @@ int main(int argc, char const* argv[]) {
     glm::vec3 light_pos(1, 1, 0);
     glm::vec3 normal(0, 1, 0);
     glm::vec3 tangent(0, 0, 1);
+    float tangent_deg[2] = {0.f, 0.f};
     // shader
     SpecularShader specular_shader;
     KajiyaKayShader kajiyakay_shader;
@@ -84,8 +131,8 @@ int main(int argc, char const* argv[]) {
         "AF Marschner Shader",
     };
 
-    // glsl window
-    GLSLWindow window(1024, 512);
+    // gl window
+    GLWindow window(1024, 512);
     bool gl_ret = window.init("title", true, 0);
     if (!gl_ret) return false;
 
@@ -106,15 +153,7 @@ int main(int argc, char const* argv[]) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // camera
-        glm::mat4 mv_mat = camera.getViewMatrix() * glm::mat4(1.0);
-        glm::mat4 p_mat = camera.getProjectionMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glMultMatrixf(&mv_mat[0][0]);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glMultMatrixf(&p_mat[0][0]);
-        checkGlError(101);
+        setCameraMatrix(camera);
 
         // create mesh
         Mesh brdf_mesh;  // brdf mesh
@@ -129,10 +168,23 @@ int main(int argc, char const* argv[]) {
         checkGlError(102);
 
         // draw lines
-        drawLine(org_pos, light_pos, 5.f, glm::vec3(1.f));
-        if (shader_idx != 0) {  // tangent line
+        // light
+        drawLine(org_pos, light_pos, 5.f, glm::vec3(1.f), 10.f);
+        // inverse light lines
+        glm::vec3 light_inv_pos = glm::reflect(org_pos - light_pos, normal)
+                                  + org_pos;
+        drawLine(org_pos, light_inv_pos, 5.f, glm::vec3(0.6f), 10.f);
+        // normal
+        drawLine(org_pos, normal, 5.f, glm::vec3(0.f, 1.f, 0.f), 10.f);
+        // tangent
+        if (shader_idx != 0) {
             glm::vec3 neg_tangent = -tangent;
-            drawLine(tangent, neg_tangent, 10.f, glm::vec3(1.f, 0.5f, 0.2f));
+            drawLine(tangent, neg_tangent, 10.f, glm::vec3(1.f, 0.3f, 0.1f), 13.f);
+        }
+        // binormal
+        if (shader_idx != 0) {
+            glm::vec3 binormal = glm::normalize(glm::cross(tangent, normal));
+            drawLine(org_pos, binormal, 5.f, glm::vec3(0.f, 0.f, 1.0f), 10.f);
         }
 
         // imgui
@@ -146,9 +198,14 @@ int main(int argc, char const* argv[]) {
             ImGui::DragFloat3("Light Position", &light_pos[0], 0.01f);
             // Tangent
             if (shader_idx != 0) {
-                ImGui::DragFloat3("Tangent", &(tangent[0]), 0.01f);
-                tangent = glm::normalize(tangent);
-                if (tangent != tangent) tangent = glm::vec3(0, 0, 1); // for nan 
+                ImGui::DragFloat2("Tangent (deg)", tangent_deg, 1.f);
+                tangent_deg[0] = glm::clamp(tangent_deg[0], -180.f, 180.f);
+                tangent_deg[1] = glm::clamp(tangent_deg[1], -180.f, 180.f);
+                float theta = tangent_deg[0] * M_PI / 180.f;
+                float phi = tangent_deg[1] * M_PI / 180.f;
+                tangent[0] = sin(theta) * cos(phi);
+                tangent[1] = sin(theta) * sin(phi);
+                tangent[2] = cos(theta);
             }
             // shader parameters
             if (shader_idx == 0) {
@@ -177,9 +234,7 @@ int main(int argc, char const* argv[]) {
         checkGlError(103);
 
         // Check input type
-        ImGuiIO &io = ImGui::GetIO();
-        bool in_imgui = io.WantCaptureMouse || io.WantCaptureKeyboard;
-        window.useInput(!in_imgui);
+        updateIO(window);
 
         // show
         window.update();
