@@ -6,7 +6,6 @@ bool GLSLWindow::glew_inited = false;
 
 bool GLSLWindow::init(const std::string& title, bool user_input, 
                       int vsync_interval) {
-
     if (!GLSLWindow::glfw_inited) {
         std::cout << "* Initialize glfw" << std::endl;
         // Initialize GLFW
@@ -14,6 +13,7 @@ bool GLSLWindow::init(const std::string& title, bool user_input,
             std::cout << " >> Failed to initialize GLFW" << std::endl;
             return false;
         }
+        checkGlError(100);
         GLSLWindow::glfw_inited = true;
 
 //         // Select OpenGL 3.3 Core Profile
@@ -33,6 +33,7 @@ bool GLSLWindow::init(const std::string& title, bool user_input,
         return 1;
     }
     glfwMakeContextCurrent(this->window);
+    checkGlError(101);
 
     // Set vsync interval
     glfwSwapInterval(vsync_interval);
@@ -86,13 +87,16 @@ bool GLSLWindow::shouldClose() {
 
 void GLSLWindow::active() {
     glfwMakeContextCurrent(this->window);
+    checkGlError(102);
 }
 
 void GLSLWindow::update() {
     // Swap screen buffers
     glfwSwapBuffers(this->window);
+    checkGlError(103);
     // Poll callbacks
     glfwPollEvents();
+    checkGlError(104);
 }
 
 void GLSLWindow::exit() {

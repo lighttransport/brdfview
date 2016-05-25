@@ -181,6 +181,7 @@ int main(int argc, char const* argv[]) {
             }
         }
         ImGui::Render();
+        checkGlError(400);
 
 
         // Check input type
@@ -190,13 +191,6 @@ int main(int argc, char const* argv[]) {
 
         // show
         window.update();
-
-        // error check
-        GLenum errcode = glGetError();
-        if (errcode != GL_NO_ERROR) {
-            const GLubyte *errstring = gluErrorString(errcode);
-            std::cout << errstring << std::endl;
-        }
     }
 
     // exit

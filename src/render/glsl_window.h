@@ -12,6 +12,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "glsl_utils.h"
+
 
 // Interface class for GLSLWindow.
 // To use mouse input, set inherited class through GLSLWindow::setCamera().

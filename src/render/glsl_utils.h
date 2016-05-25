@@ -14,6 +14,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+void checkGlError(int idx=-1);
 
 // Shader Loader
 GLuint loadShaders(const std::string& vs_file, const std::string& fs_file);

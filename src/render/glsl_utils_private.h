@@ -53,8 +53,10 @@ void GLSLVertexArray::set(const GLuint program_id,
     // generate vertex array
     if (!this->inited) {
         glGenVertexArrays(1, &(this->vertex_array_id));
+        checkGlError(0);
     }
     glBindVertexArray(this->vertex_array_id);
+    checkGlError(1);
 
     // indices
     this->setupElement(element);
@@ -70,14 +72,17 @@ void GLSLVertexArray::setupElement(const std::vector<T>& element) {
     // generate
     if (!this->inited) {
         glGenBuffers(1, &(this->element_buf_id));
+        checkGlError(2);
         this->element_count = element.size() * getDataChannels(element);
         this->element_type = getDataType(element);
     }
 
     // set
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->element_buf_id);
+    checkGlError(3);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, getDataTotalSize(element),
                  &element[0] , GL_DYNAMIC_DRAW);
+    checkGlError(4);
 }
 
 template<class First, class... Rest>
@@ -98,8 +103,10 @@ void GLSLVertexArray::setupAttribute(const GLuint idx,
     GLuint attribute_id;
     if (!this->inited) {
         glGenBuffers(1, &attribute_id);
+        checkGlError(5);
         attribute_loc = glGetAttribLocation(program_id,
                                             createAttribName(idx).c_str());
+        checkGlError(6);
         if (attribute_loc < 0) {
             std::cout << "Invalid attribute location" << std::endl;
             return;
@@ -116,10 +123,14 @@ void GLSLVertexArray::setupAttribute(const GLuint idx,
 
     // set
     glEnableVertexAttribArray(attribute_loc);
+    checkGlError(7);
     glBindBuffer(GL_ARRAY_BUFFER, attribute_id);
+    checkGlError(8);
     glBufferData(GL_ARRAY_BUFFER, getDataTotalSize(attribute), &(attribute[0]),
                  GL_DYNAMIC_DRAW);
+    checkGlError(9);
     glVertexAttribPointer(attribute_loc, getDataChannels(attribute),
                           getDataType(attribute), GL_FALSE, 0, (void*)0);
+    checkGlError(10);
 }
 #endif

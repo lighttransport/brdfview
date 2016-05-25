@@ -43,6 +43,17 @@ GLint compileShader(int id, const std::string& code){
 
 } // namespace 
 
+
+// === Error Checker ===
+void checkGlError(int idx) {
+    GLenum errcode = glGetError();
+    if (errcode != GL_NO_ERROR) {
+        const GLubyte *errstring = gluErrorString(errcode);
+        if (idx >= 0) std::cout << idx;
+        std::cout << errstring << std::endl;
+    }
+}
+
 // === Shader Loader ===
 GLuint loadShaders(const std::string& vs_file, const std::string& fs_file){
     // Read vertex shader file
@@ -61,7 +72,9 @@ GLuint loadShaders(const std::string& vs_file, const std::string& fs_file){
 
     // Create the shaders
     GLuint vs_id = glCreateShader(GL_VERTEX_SHADER);
+    checkGlError(300);
     GLuint fs_id = glCreateShader(GL_FRAGMENT_SHADER);
+    checkGlError(301);
 
 
     // Compile Vertex Shader
@@ -84,6 +97,7 @@ GLuint loadShaders(const std::string& vs_file, const std::string& fs_file){
     glAttachShader(program_id, vs_id);
     glAttachShader(program_id, fs_id);
     glLinkProgram(program_id);
+    checkGlError(302);
 
     // Check the program
     GLint status = GL_FALSE;
@@ -112,8 +126,10 @@ GLuint loadShaders(const std::string& vs_file, const std::string& fs_file){
 void GLSLVertexArray::draw() {
     if (inited) {
         glBindVertexArray(this->vertex_array_id);
+        checkGlError(200);
         glDrawElements(GL_TRIANGLES, this->element_count,
                        this->element_type, (void*)0);
+        checkGlError(201);
     } else {
         std::cout << "* Vertex array is not initialized" << std::endl;
     }
