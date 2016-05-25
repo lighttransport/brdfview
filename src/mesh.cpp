@@ -67,7 +67,7 @@ void createGround(Mesh& mesh, float scale, float eps) {
 }
 
 
-// Create intensity hemisphere
+// Create intensity sphere
 void createBRDFMesh(Mesh& mesh, BaseShader& shader, const glm::vec3& light_pos,
                     float scale, int n_phi, const glm::vec3& up_dir) {
     mesh.clear();
@@ -75,7 +75,7 @@ void createBRDFMesh(Mesh& mesh, BaseShader& shader, const glm::vec3& light_pos,
     glm::vec3 light_dir = glm::normalize(light_pos);
 
     // y direction step
-    int n_theta = std::max(n_phi / 4, 1); // 2 PI -> 1/2 PI
+    int n_theta = std::max(n_phi / 2, 1); // 2 PI -> 1 PI
 
     // rotation matrix
     glm::mat4 rot = glm::orientation(glm::vec3(0.f, 1.f, 0.f),
@@ -87,12 +87,14 @@ void createBRDFMesh(Mesh& mesh, BaseShader& shader, const glm::vec3& light_pos,
     }
 
     // vertices
-    mesh.vertices.resize(n_phi * n_theta + 1);
+    mesh.vertices.resize(n_phi * n_theta + 2);
     for (int i_phi = 0; i_phi < n_phi; i_phi++) {
         float phi_rad = 2.0 * M_PI * i_phi / n_phi;
 
         for (int i_theta = 0; i_theta < n_theta; i_theta++) {
-            float theta_rad = 0.5 * M_PI * i_theta / n_theta; // before the top
+            float theta_rad = (0.5 * M_PI * (i_theta + 1) / (n_theta + 1)) * 2.f
+                              - (M_PI * 0.5f);
+            // bottom+1 ~ top-1
 
             // y up
             float x = scale * cos(theta_rad) * sin(phi_rad);
@@ -106,10 +108,16 @@ void createBRDFMesh(Mesh& mesh, BaseShader& shader, const glm::vec3& light_pos,
         }
     }
     {
+        // the bottom one
+        glm::vec3 bottom_pos = glm::mat3(rot) * glm::vec3(0, -scale, 0); // rotation
+        float intensity = shader.sample(light_dir, bottom_pos, up_dir);
+        mesh.vertices[n_phi * n_theta] = glm::vec3(bottom_pos) * intensity;
+    }
+    {
         // the top one
         glm::vec3 top_pos = glm::mat3(rot) * glm::vec3(0, scale, 0); // rotation
         float intensity = shader.sample(light_dir, top_pos, up_dir);
-        mesh.vertices[n_phi * n_theta] = glm::vec3(top_pos) * intensity;
+        mesh.vertices[n_phi * n_theta + 1] = glm::vec3(top_pos) * intensity;
     }
 
     // register indices
@@ -118,6 +126,15 @@ void createBRDFMesh(Mesh& mesh, BaseShader& shader, const glm::vec3& light_pos,
 
         for (int i_theta = 0; i_theta < n_theta; i_theta++) {
             int i_theta2 = i_theta + 1;
+
+            // bottom
+            if (i_theta == 0) {
+                unsigned int idx0 = n_phi * n_theta; // bottom
+                unsigned int idx1 = i_phi2 * n_theta + i_theta;
+                unsigned int idx2 = i_phi * n_theta + i_theta;
+                glm::uvec3 triangle0(idx0, idx1, idx2);
+                mesh.indices.push_back(triangle0);
+            }
 
             if (i_theta2 != n_theta) {
                 unsigned int idx0 = i_phi * n_theta + i_theta;
@@ -133,7 +150,7 @@ void createBRDFMesh(Mesh& mesh, BaseShader& shader, const glm::vec3& light_pos,
                 // top
                 unsigned int idx0 = i_phi * n_theta + i_theta;
                 unsigned int idx1 = i_phi2 * n_theta + i_theta;
-                unsigned int idx2 = n_phi * n_theta; // top
+                unsigned int idx2 = n_phi * n_theta + 1; // top
 
                 glm::uvec3 triangle0(idx0, idx1, idx2);
                 mesh.indices.push_back(triangle0);
