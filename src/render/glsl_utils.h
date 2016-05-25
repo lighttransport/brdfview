@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <sstream>
 #include <vector>
 
 #include <GL/glew.h>
@@ -25,7 +26,8 @@ public:
     ~GLSLVertexArray() { clear(); }
 
     template<class T1, class... T2>
-    void set(const std::vector<T1>& element, // indices
+    void set(const GLuint program_id,
+             const std::vector<T1>& element, // indices
              const std::vector<T2>&... attributes);
 
     void draw();
@@ -36,7 +38,8 @@ private:
     bool inited;
     GLuint vertex_array_id;  // vertex array
     GLuint element_buf_id;  // indices buffer
-    std::map<int, GLuint> attribute_ids;  // other attribute buffers
+    std::map<int, GLint> attribute_locs;  // other attribute buffers
+    std::map<GLint, GLuint> attribute_ids;
 
     GLsizei element_count;
     GLenum element_type;
@@ -46,11 +49,13 @@ private:
 
     template<class First, class... Rest>
     void setupAttribute(const GLuint idx,
+                        const GLuint program_id,
                         const std::vector<First>& first,
                         const std::vector<Rest>&... rest);
 
     template<class T>
     void setupAttribute(const GLuint idx,
+                        const GLuint program_id,
                         const std::vector<T>& attribute);
 };
 

@@ -38,9 +38,17 @@ inline GLint getDataTotalSize(const std::vector<T>& v) {
 }
 
 
+inline std::string createAttribName(const GLuint idx) {
+    std::stringstream ss;
+    ss << "attrib" << idx;
+    return ss.str();
+}
+
+
 // === Vertex Array ===
 template<class T1, class... T2>
-void GLSLVertexArray::set(const std::vector<T1>& element,
+void GLSLVertexArray::set(const GLuint program_id,
+                          const std::vector<T1>& element,
                           const std::vector<T2>&... attributes) {
     // generate vertex array
     if (!this->inited) {
@@ -52,7 +60,7 @@ void GLSLVertexArray::set(const std::vector<T1>& element,
     this->setupElement(element);
 
     // attribute
-    this->setupAttribute(0, attributes...);
+    this->setupAttribute(0, program_id, attributes...);
 
     this->inited = true;
 }
@@ -74,31 +82,44 @@ void GLSLVertexArray::setupElement(const std::vector<T>& element) {
 
 template<class First, class... Rest>
 void GLSLVertexArray::setupAttribute(const GLuint idx,
+                                     const GLuint program_id,
                                      const std::vector<First>& first,
                                      const std::vector<Rest>&... rest) {
-    this->setupAttribute(idx, first);
-    this->setupAttribute(idx + 1, rest...);
+    this->setupAttribute(idx, program_id, first);
+    this->setupAttribute(idx + 1, program_id, rest...);
 }
 
 template<class T>
 void GLSLVertexArray::setupAttribute(const GLuint idx,
+                                     const GLuint program_id,
                                      const std::vector<T>& attribute) {
     // generate or fetch
+    GLint attribute_loc;
     GLuint attribute_id;
     if (!this->inited) {
         glGenBuffers(1, &attribute_id);
-        this->attribute_ids[idx] = attribute_id;
+        attribute_loc = glGetAttribLocation(program_id,
+                                            createAttribName(idx).c_str());
+        if (attribute_loc < 0) {
+            std::cout << "Invalid attribute location" << std::endl;
+            return;
+        }
+        // register
+        this->attribute_locs[idx] = attribute_loc;
+        this->attribute_ids[attribute_loc] = attribute_id;
     } else {
-        assert(this->attribute_ids.count(idx));
-        attribute_id = this->attribute_ids[idx];
+        assert(this->attribute_locs.count(idx));
+        attribute_loc = this->attribute_locs[idx];
+        assert(this->attribute_ids.count(attribute_loc));
+        attribute_id = this->attribute_ids[attribute_loc];
     }
 
     // set
-    glEnableVertexAttribArray(idx);
+    glEnableVertexAttribArray(attribute_loc);
     glBindBuffer(GL_ARRAY_BUFFER, attribute_id);
     glBufferData(GL_ARRAY_BUFFER, getDataTotalSize(attribute), &(attribute[0]),
                  GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(idx, getDataChannels(attribute),
+    glVertexAttribPointer(attribute_loc, getDataChannels(attribute),
                           getDataType(attribute), GL_FALSE, 0, (void*)0);
 }
 #endif

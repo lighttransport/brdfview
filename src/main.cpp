@@ -23,8 +23,8 @@
 #include "shader.h"
 
 
-void setMeshToVA(Mesh& mesh, GLSLVertexArray& va) {
-    va.set(mesh.indices, mesh.vertices, mesh.normals);
+void setMeshToVA(GLuint program_id, Mesh& mesh, GLSLVertexArray& va) {
+    va.set(program_id, mesh.indices, mesh.vertices, mesh.normals);
 }
 
 
@@ -93,8 +93,8 @@ int main(int argc, char const* argv[]) {
         createGround(ground_mesh, 1);
 
         // set mesh to vertex array
-        setMeshToVA(brdf_mesh, brdf_vertex_array);
-        setMeshToVA(ground_mesh, ground_vertex_array);
+        setMeshToVA(program_id, brdf_mesh, brdf_vertex_array);
+        setMeshToVA(program_id, ground_mesh, ground_vertex_array);
 
         // use glsl shader
         glUseProgram(program_id);
