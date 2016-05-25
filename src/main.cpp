@@ -201,8 +201,8 @@ int main(int argc, char const* argv[]) {
             ImGui::DragFloat2("Light (deg)", light_deg, 1.f);
             light_deg[0] = glm::clamp(light_deg[0], -180.f, 180.f);
             light_deg[1] = glm::clamp(light_deg[1], -180.f, 180.f);
-            float theta = light_deg[0] * M_PI / 180.f;
-            float phi = light_deg[1] * M_PI / 180.f;
+            float theta = light_deg[0] * glm::pi<float>() / 180.f;
+            float phi = light_deg[1] * glm::pi<float>() / 180.f;
             light_pos[0] = sin(theta) * cos(phi) * LIGHT_LENGTH;
             light_pos[1] = cos(theta) * LIGHT_LENGTH;
             light_pos[2] = sin(theta) * sin(phi) * LIGHT_LENGTH;

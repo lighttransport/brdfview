@@ -194,7 +194,7 @@ inline float N_p_(int p, float theta_d, float phi, float eta, float sigma_a) {
 }
 
 inline float gaussian(float x, float mu, float sigma) {
-    const float a = 1.f / sqrt(2 * M_PI);
+    const float a = 1.f / sqrt(2 * glm::pi<float>());
     return exp(-(x - mu) * (x - mu) * 0.5 / (sigma * sigma)) * a / sigma;
 }
 
@@ -233,7 +233,7 @@ inline float AFMarschner(float phi, float theta_d, float theta_h,
     float M_TT = gaussian(theta_h, hp->longitudinalShiftTT,
                           hp->longitudinalWidthTT);
 #ifdef af_marschner_hair_shader_approx_dist
-    float N_TT = gaussian(M_PI, fabs(phi), hp->azimuthalWidthTT);
+    float N_TT = gaussian(glm::pi<float>(), fabs(phi), hp->azimuthalWidthTT);
 #else
 //     float N_TT = N_p_(1, theta_d, phi, hp->eta, hp->sigma_a);
     float N_TT = 0;
@@ -297,7 +297,7 @@ inline glm::vec3 local_spherical(const glm::vec3& v, const glm::vec3& x,
     const float zdash = glm::dot(v, z);
     const float r = sqrt(xdash*xdash + ydash*ydash + zdash*zdash);
     return glm::vec3(atan2(ydash, xdash),
-                     M_PI * 0.5 - acos(ClampUnitAbs(zdash/r)),
+                     glm::pi<float>() * 0.5 - acos(ClampUnitAbs(zdash/r)),
                      0);
 }
 
@@ -309,12 +309,12 @@ inline void findAngles(float& phi, float& theta_d, float& theta_h,
       
     // phi = fmod( fabs( omegaO[0] - omegaI[0] ), 2.0 * PI );
     phi = fabs(omegaO[0] - omegaI[0]);
-    if (phi > M_PI) phi -= 2.f * M_PI;
+    if (phi > glm::pi<float>()) phi -= 2.f * glm::pi<float>();
     // phi = omegaO[0] - omegaI[0];
 
     theta_d = fabs(omegaO[1] - omegaI[1]) * 0.5;
     theta_h = (omegaO[1] + omegaI[1]) * 0.5;
-    if(theta_d > M_PI / 2) theta_d -= M_PI;
+    if(theta_d > glm::pi<float>() / 2) theta_d -= glm::pi<float>();
     // theta_d = PI - theta_d;
     theta_t = omegaI[1];
 }

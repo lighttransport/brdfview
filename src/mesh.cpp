@@ -89,11 +89,11 @@ void createBRDFMesh(Mesh& mesh, BaseShader& shader, const glm::vec3& light_pos,
     // vertices
     mesh.vertices.resize(n_phi * n_theta + 2);
     for (int i_phi = 0; i_phi < n_phi; i_phi++) {
-        float phi_rad = 2.0 * M_PI * i_phi / n_phi;
+        float phi_rad = 2.0 * glm::pi<float>() * i_phi / n_phi;
 
         for (int i_theta = 0; i_theta < n_theta; i_theta++) {
-            float theta_rad = (0.5 * M_PI * (i_theta + 1) / (n_theta + 1)) * 2.f
-                              - (M_PI * 0.5f);
+            float theta_rad = (0.5 * glm::pi<float>() * (i_theta + 1) / (n_theta + 1)) * 2.f
+                              - (glm::pi<float>() * 0.5f);
             // bottom+1 ~ top-1
 
             // y up

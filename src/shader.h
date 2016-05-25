@@ -4,9 +4,11 @@
 #include <algorithm>
 #include <string>
 #include <iostream>
+#include <cmath>
 
 #define GLM_FORCE_RADIANS 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 
 class BaseShader {
 public:
@@ -37,7 +39,7 @@ public:
 };
 
 
-inline float degToRad(float x){ return x * M_PI / 180.f; }
+inline float degToRad(float x){ return x * glm::pi<float>() / 180.f; }
 struct AFMarschnerHairParams {
     AFMarschnerHairParams() {
         intensityR = 5;

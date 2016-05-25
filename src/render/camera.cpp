@@ -33,7 +33,7 @@ void Camera::rotateOrbit(float dtheta, float dphi) {
     theta += dtheta;
     phi   += dphi;
     // Check phi range
-    const float HALF_PIE = M_PI * 0.5f - std::numeric_limits<float>::epsilon();
+    const float HALF_PIE = glm::pi<float>() * 0.5f - std::numeric_limits<float>::epsilon();
     if (HALF_PIE < phi) phi = HALF_PIE;
     else if (phi < -HALF_PIE) phi = -HALF_PIE;
 
